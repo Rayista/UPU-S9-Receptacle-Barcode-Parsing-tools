@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UPU S9 总包条码解析工具</title>
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            width: 92%;
+            max-width: 800px;
+            margin: 20px auto;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        h2 {
+            text-align: center;
+            color: #007BFF;
+            margin-bottom: 20px;
+        }
+        .container {
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+        }
+        input, textarea, button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 12px;
+            font-size: 16px; 
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .btn-copy {
+            background: #28a745;
+        }
+        .btn-copy:hover {
+            background: #218838;
+        }
+        textarea {
+            height: 250px;
+            background-color: #f9f9f9;
+            color: #444;
+            font-family: "Courier New", Courier, monospace;
+            resize: vertical;
+        }
+
+        textarea[readonly] {
+            cursor: default;
+        }
+        
+        @media (max-width: 480px) {
+            body { margin: 10px auto; }
+            .container { padding: 20px 15px; }
+            h2 { font-size: 1.2rem; }
+        }
+
+        .top-nav {
+            display: flex;
+            justify-content: space-between; 
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 10px; 
+        }
+
+        .nav-btn {
+            text-decoration: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            white-space: nowrap; 
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            opacity: 0.9;
+        }
+
+        .github-btn {
+            background-color: #24292e;
+            color: #ffffff !important;
+        }
+
+        .switch-btn {
+            background-color: #6f42c1;
+            color: #ffffff !important;
+        }
+
+        @media (max-width: 400px) {
+            .nav-btn {
+                padding: 6px 10px;
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+            <div class="top-nav">
+            <a href="https://github.com/你的用户名/仓库名" target="_blank" class="nav-btn github-btn">
+                <svg height="16" width="16" viewBox="0 0 16 16" style="fill: white; margin-right: 6px;"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+                GitHub
+            </a>
+            
+            <a href="https://rayista.github.io/Mian-Post-Receptacle-Barcode-Parsing-tools/" target="_blank" class="nav-btn switch-btn">
+                🔄 切换到 [缅邮总包条码解析工具]
+            </a>
+        </div>
+    <div class="container">
+
+        <h2>UPU S9 总包条码解析工具</h2>
+
+        <input type="text" id="barcode" placeholder="请输入符合万国邮联S9标准的总包条码">
+
+        <button onclick="parseBarcode()">解析</button>
+        <button class="btn-copy" onclick="copyResult()">复制解析结果</button>
+
+        <textarea id="output" placeholder="解析结果" readonly></textarea>
+    </div>
+
+<script>
+
+// ================= IMPC 数据 =================
+let impcMap = {};
+
+// 加载 IMPC 数据
+async function loadIMPCData() {
+    try {
+        const res = await fetch('data/impc.json');
+        impcMap = await res.json();
+        console.log("IMPC 数据加载完成");
+    } catch (e) {
+        console.error("IMPC 数据加载失败", e);
+    }
+}
+
+loadIMPCData();
+
+// 获取 IMPC 信息
+function getIMPCInfo(code) {
+    const data = impcMap[code];
+    if (!data) return code + "（未知 IMPC）";
+    return code + "（" + data.name + " / " + data.operator + "）";
+}
+
+// ================= 解析逻辑 =================
+function parseBarcode() {
+
+    const code = document.getElementById("barcode").value.trim().toUpperCase();
+    const output = document.getElementById("output");
+
+    if (Object.keys(impcMap).length === 0) {
+        output.value = "正在加载互换局资料库";
+        return;
+    }
+
+    // YJSP
+    const yajueNumbers = ["114514", "1919810", "1145141919810"];
+    if (yajueNumbers.includes(code)) {
+        output.value = "怎么会有这么臭的总包条码？";
+        return;
+    }
+
+    if (code.length !== 29) {
+        output.value = `❌ 万国邮联 S9 标准条码长度应为 29 位，你输入了 ${code.length} 位，请核验！`;
+        return;
+    }
+
+    const mailTypeMap = {
+        A: "航空（优先邮件）",
+        B: "空运水陆路（非优先邮件）",
+        C: "水陆路（非优先邮件）",
+        D: "水陆路（优先邮件）"
+    };
+
+    const subTypeMap = {
+        "CA":"包裹-敞口","CB":"包裹-退回","CC":"包裹-电子商务","CD":"包裹-直接进入",
+        "CF":"包裹-大宗货物服务","CN":"包裹-普通","CR":"包裹-商品退回","CT":"包裹-空容器",
+        "CU":"包裹-双边协议","CV":"包裹-保价","CX":"包裹-多边协议","CY":"包裹-多边协议",
+        "CZ":"包裹-双边协议",
+
+        "EA":"EMS-敞口","ED":"EMS-文件","EG":"EMS-限时文件","EH":"EMS-限时商品",
+        "EI":"EMS-限时混合","EM":"EMS-商品","EN":"EMS-混合","ER":"EMS-商品退回",
+        "ET":"EMS-空容器","EU":"EMS-双边协议","EY":"EMS-多边协议","EZ":"EMS-双边协议",
+
+        "TT":"空容器-混合","TZ":"空容器-双边协议",
+
+        "UA":"函件-盲人读物/小包","UB":"函件-大宗","UC":"函件-协调直接邮件",
+        "UD":"函件-终端费体系外","UE":"函件-敞口","UF":"函件-直接进入",
+        "UG":"函件-盲人读物直接进入","UH":"函件-信函/盲人读物",
+        "UI":"函件-国际商业回函","UL":"函件-信函和大宗","UM":"函件-M袋",
+        "UN":"函件-信函/盲人读物","UP":"函件-明信片","UR":"函件-挂号",
+        "UT":"函件-空容器","UU":"函件-双边协议","UV":"函件-应酬金退回",
+        "UX":"函件-跟踪投递","UY":"函件-多边协议","UZ":"函件-双边协议"
+    };
+
+    const maxContainerMap = {
+        "0": "非最大",
+        "1": "最大",
+        "9": "未知"
+    };
+
+    const specialMap = {
+        "0": "非挂号/非保价",
+        "1": "挂号/保价",
+        "9": "未知"
+    };
+
+    try {
+        const result = `
+发出互换局：${getIMPCInfo(code.substring(0,6))}
+接收互换局：${getIMPCInfo(code.substring(6,12))}
+邮件类别：${code[12]}（${mailTypeMap[code[12]] || "未知"}）
+邮件子类别：${code.substring(13,15)}（${subTypeMap[code.substring(13,15)] || "未知"}）
+年份（最后一位）：${code[15]}
+总包序列号：${code.substring(16,20)}
+容器序列号：${code.substring(20,23)}
+最大容器标识：${code[23]}（${maxContainerMap[code[23]] || "未知"}）
+特殊标识：${code[24]}（${specialMap[code[24]] || "未知"}）
+容器重量：${(parseInt(code.substring(25,29))/10).toFixed(1)} kg
+        `;
+
+        output.value = result.trim();
+
+    } catch (e) {
+        output.value = "❌ 解析失败，请检查条码是否合规";
+    }
+}
+
+function copyResult() {
+    const output = document.getElementById("output");
+    
+    if (!output.value || output.value.includes("❌") || output.value.includes("⏳") || output.value.includes("🤢")) {
+        alert("没有可复制的有效解析结果！");
+        return;
+    }
+
+    navigator.clipboard.writeText(output.value).then(() => {
+        alert("复制成功！");
+        // 天津邮电速递局刘师傅可能会需要
+    }).catch(err => {
+        output.select();
+        document.execCommand('copy');
+        alert("复制成功！");
+    });
+}
+
+</script>
+
+</body>
+</html>
