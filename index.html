@@ -267,8 +267,8 @@ function parseBarcode() {
 邮件类别：${code[12]}（${mailTypeMap[code[12]] || "未知"}）
 邮件子类别：${code.substring(13,15)}（${subTypeMap[code.substring(13,15)] || "未知"}）
 年份（最后一位）：${code[15]}
-总包序列号：${code.substring(16,20)}
-容器序列号：${code.substring(20,23)}
+总包号码：${code.substring(16,20)}
+容器号码：${code.substring(20,23)}
 最大容器标识：${code[23]}（${maxContainerMap[code[23]] || "未知"}）
 特殊标识：${code[24]}（${specialMap[code[24]] || "未知"}）
 容器重量：${(parseInt(code.substring(25,29))/10).toFixed(1)} kg
