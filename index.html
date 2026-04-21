@@ -118,34 +118,32 @@
 </head>
 
 <body>
-            <div class="top-nav">
-            <a href="https://github.com/Rayista/UPU-S9-Receptacle-Barcode-Parsing-tools" target="_blank" class="nav-btn github-btn">
-                <svg height="16" width="16" viewBox="0 0 16 16" style="fill: white; margin-right: 6px;"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
-                GitHub
-            </a>
-            
-            <a href="https://rayista.github.io/Mian-Post-Receptacle-Barcode-Parsing-tools/" target="_blank" class="nav-btn switch-btn">
-                🔄 切换到 [缅邮总包条码解析工具]
-            </a>
-        </div>
-    <div class="container">
+    <div class="top-nav">
+        <a href="https://github.com/Rayista/UPU-S9-Receptacle-Barcode-Parsing-tools" target="_blank" class="nav-btn github-btn">
+            <svg height="16" width="16" viewBox="0 0 16 16" style="fill: white; margin-right: 6px;"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+            GitHub
+        </a>
+        
+        <a href="https://rayista.github.io/Mian-Post-Receptacle-Barcode-Parsing-tools/" target="_blank" class="nav-btn switch-btn">
+            🔄 切换到 [缅邮总包条码解析工具]
+        </a>
+    </div>
 
+    <div class="container">
         <h2>UPU S9 总包条码解析工具</h2>
 
-        <input type="text" id="barcode" placeholder="请输入符合万国邮联S9标准的总包条码">
+        <input type="text" id="barcode" placeholder="请输入 29 位总包条码或 6 位 IMPC 代码">
 
-        <button onclick="parseBarcode()">解析</button>
+        <button onclick="parseBarcode()">解析 / 查询</button>
         <button class="btn-copy" onclick="copyResult()">复制解析结果</button>
 
-        <textarea id="output" placeholder="解析结果" readonly></textarea>
+        <textarea id="output" placeholder="解析结果将在此显示..." readonly></textarea>
     </div>
 
 <script>
 
-// ================= IMPC 数据 =================
 let impcMap = {};
 
-// 加载 IMPC 数据
 async function loadIMPCData() {
     try {
         const res = await fetch('data/impc.json');
@@ -158,16 +156,12 @@ async function loadIMPCData() {
 
 loadIMPCData();
 
-// 获取 IMPC 信息
 function getIMPCInfo(code) {
     const data = impcMap[code];
     if (!data) return code + "（未知 IMPC）";
     return code + "（" + data.name + " / " + data.operator + "）";
 }
-
-// ================= 解析逻辑 =================
 function parseBarcode() {
-
     const code = document.getElementById("barcode").value.trim().toUpperCase();
     const output = document.getElementById("output");
 
@@ -176,7 +170,17 @@ function parseBarcode() {
         return;
     }
 
-    // YJSP
+    const isOnlyIMPC = /^[A-Z]{6}$/.test(code);
+    if (isOnlyIMPC) {
+        const data = impcMap[code];
+        if (data) {
+            output.value = `互换局快速查询结果：\n------------------------------\nIMPC 代码：${code}\n互换局名：${data.name}\n机构名称：${data.operator}`;
+        } else {
+            output.value = `❌ 未在资料库中找到该 IMPC 代码：${code}`;
+        }
+        return;
+    }
+
     const yajueNumbers = ["114514", "1919810", "1145141919810"];
     if (yajueNumbers.includes(code)) {
         output.value = "怎么会有这么臭的总包条码？";
@@ -184,7 +188,7 @@ function parseBarcode() {
     }
 
     if (code.length !== 29) {
-        output.value = `❌ 万国邮联 S9 标准条码长度应为 29 位，你输入了 ${code.length} 位，请核验！`;
+        output.value = `❌ 输入有误：\n- UPU S9 总包条码应为 29 位\n- IMPC 代码查询应为 6 位纯英文\n你当前输入了 ${code.length} 位，请核验！`;
         return;
     }
 
@@ -196,56 +200,53 @@ function parseBarcode() {
     };
 
     const subTypeMap = {
-"CA":"包裹-开放转运",
-"CB":"包裹-退回",
-"CC":"包裹-电子商务",
-"CD":"包裹-直接封发",
-"CF":"包裹-大宗交寄",
-"CN":"包裹-普通",
-"CR":"包裹-商品退回",
-"CT":"包裹-空袋",
-"CU":"包裹-双边约定用途",
-"CV":"包裹-保价",
-"CX":"包裹-多边约定用途",
-"CY":"包裹-多边约定用途",
-"CZ":"包裹-双边约定用途",
-
-"EA":"EMS-开放转运",
-"ED":"EMS-文件",
-"EG":"EMS-限时文件",
-"EH":"EMS-限时商品",
-"EI":"EMS-限时混合",
-"EM":"EMS-商品",
-"EN":"EMS-混合",
-"ER":"EMS-商品退回",
-"ET":"EMS-空袋",
-"EU":"EMS-双边约定用途",
-"EY":"EMS-多边约定用途",
-"EZ":"EMS-双边约定用途",
-
-"TT":"空袋-混合",
-"TZ":"空袋-双边约定用途",
-
-"UA":"函件-其他函件/小包（商品）",
-"UB":"函件-大宗",
-"UC":"函件-协调直接邮件",
-"UD":"函件-终端费体系外",
-"UE":"函件-开放转运",
-"UF":"函件-信函直接封发",
-"UG":"函件-其他函件直接封发",
-"UH":"函件-信函/其他函件直接封发",
-"UI":"函件-国际商业回函",
-"UL":"函件-信函及大宗函件",
-"UM":"函件-印刷品专袋",
-"UN":"函件-信函/其他函件",
-"UP":"函件-明信片",
-"UR":"函件-挂号",
-"UT":"函件-空袋",
-"UU":"函件-双边约定用途",
-"UV":"函件-不可投递退回（需结算补偿）",
-"UX":"函件-追踪投递邮件",
-"UY":"函件-多边约定用途",
-"UZ":"函件-双边约定用途"
+        "CA":"包裹-开放转运",
+        "CB":"包裹-退回",
+        "CC":"包裹-电子商务",
+        "CD":"包裹-直接封发",
+        "CF":"包裹-大宗交寄",
+        "CN":"包裹-普通",
+        "CR":"包裹-商品退回",
+        "CT":"包裹-空袋",
+        "CU":"包裹-双边约定用途",
+        "CV":"包裹-保价",
+        "CX":"包裹-多边约定用途",
+        "CY":"包裹-多边约定用途",
+        "CZ":"包裹-双边约定用途",
+        "EA":"EMS-开放转运",
+        "ED":"EMS-文件",
+        "EG":"EMS-限时文件",
+        "EH":"EMS-限时商品",
+        "EI":"EMS-限时混合",
+        "EM":"EMS-商品",
+        "EN":"EMS-混合",
+        "ER":"EMS-商品退回",
+        "ET":"EMS-空袋",
+        "EU":"EMS-双边约定用途",
+        "EY":"EMS-多边约定用途",
+        "EZ":"EMS-双边约定用途",
+        "TT":"空袋-混合",
+        "TZ":"空袋-双边约定用途",
+        "UA":"函件-其他函件/小包（商品）",
+        "UB":"函件-大宗",
+        "UC":"函件-协调直接邮件",
+        "UD":"函件-终端费体系外",
+        "UE":"函件-开放转运",
+        "UF":"函件-信函直接封发",
+        "UG":"函件-其他函件直接封发",
+        "UH":"函件-信函/其他函件直接封发",
+        "UI":"函件-国际商业回函",
+        "UL":"函件-信函及大宗函件",
+        "UM":"函件-印刷品专袋",
+        "UN":"函件-信函/其他函件",
+        "UP":"函件-明信片",
+        "UR":"函件-挂号",
+        "UT":"函件-空袋",
+        "UU":"函件-双边约定用途",
+        "UV":"函件-不可投递退回（需结算补偿）",
+        "UX":"函件-追踪投递邮件",
+        "UY":"函件-多边约定用途",
+        "UZ":"函件-双边约定用途"
     };
 
     const maxContainerMap = {
@@ -273,9 +274,7 @@ function parseBarcode() {
 特殊标识：${code[24]}（${specialMap[code[24]] || "未知"}）
 容器重量：${(parseInt(code.substring(25,29))/10).toFixed(1)} kg
         `;
-
         output.value = result.trim();
-
     } catch (e) {
         output.value = "❌ 解析失败，请检查条码是否合规";
     }
@@ -284,15 +283,15 @@ function parseBarcode() {
 function copyResult() {
     const output = document.getElementById("output");
     
-    if (!output.value || output.value.includes("❌") || output.value.includes("⏳") || output.value.includes("🤢")) {
+    if (!output.value || output.value.includes("❌") || output.value.includes("正在加载") || output.value.includes("臭")) {
         alert("没有可复制的有效解析结果！");
         return;
     }
 
     navigator.clipboard.writeText(output.value).then(() => {
         alert("复制成功！");
-        // 天津邮电速递局刘师傅可能会需要
     }).catch(err => {
+        // 天津邮电速递局刘师傅可能会需要
         output.select();
         document.execCommand('copy');
         alert("复制成功！");
